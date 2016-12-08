@@ -90,9 +90,13 @@ def readmap(filename):
                     raise ValueError('Invalid control name "{0}"'.format(cm[k]))
             # everything is valid
             controlMap = cm
-    except Exception as e:
-        print(e)
-        print('Problem with --map {0}, using default mapping'.format(filename))
+    except FileNotFoundError as e:
+        raise argparse.ArgumentTypeError(e)
+    except ValueError as e:
+        raise argparse.ArgumentTypeError('{0} in {1}'.format(e, filename))
+    
+    return filename
+#
 
 def midicallback( message, delta_time, amp, chan, quiet ):
     """respond (or not) to midi message"""
@@ -208,7 +212,7 @@ def main():
     
     parser.add_argument('--bus', type=midibus, default='blackstar', help='number or exact name including spaces of MIDI bus to listen on, default="blackstar"')
     parser.add_argument('--channel', type=channelcheck, default=0, help='MIDI channel 1-16 to listen on, 0=all, default=all')
-    parser.add_argument('--map', type=str, metavar='FILENAME', help='name of file of (cc number, control name) pairs.')
+    parser.add_argument('--map', type=readmap, metavar='FILENAME', help='name of file of (cc number, control name) pairs.')
     parser.add_argument('--quiet', action='store_true', help='suppress operational messages')
     parser.add_argument('--preset', type=presetcheck, help='send a preset select 1-128 and exit')
     parser.add_argument('--volume', type=volumecheck, help="set the amp's volume and exit")
@@ -220,9 +224,6 @@ def main():
     parser.add_argument('--listlimits', action='store_true', help='list Blackstar controls and their limits then exit')
     args = parser.parse_args()
 
-    if args.map != None:
-        readmap(args.map)
-    
     if any([ args.version, args.listbus, args.listmap, args.listcontrols, args.listlimits ]):
         if args.version:
             print('Version {0}'.format(__version__))
