@@ -85,14 +85,14 @@ def readmap(filename):
             cm = dict( [ [ int(row[0]), row[1] ] for row in csv.reader(cmf) ] )
             for k in cm.keys():
                 if k < 0 or k > 127:
-                    raise ValueError('Invalid MIDI CC number {}'.format(k))
+                    raise ValueError('Invalid MIDI CC number {0}'.format(k))
                 if cm[k].lower() not in blackstarid.BlackstarIDAmp.controls.keys():
-                    raise ValueError('Invalid control name "{}"'.format(cm[k]))
+                    raise ValueError('Invalid control name "{0}"'.format(cm[k]))
             # everything is valid
             controlMap = cm
     except Exception as e:
         print(e)
-        print('Problem with --map {}, using default mapping'.format(filename))
+        print('Problem with --map {0}, using default mapping'.format(filename))
 
 def midicallback( message, delta_time, amp, chan, quiet ):
     """respond (or not) to midi message"""
@@ -102,7 +102,7 @@ def midicallback( message, delta_time, amp, chan, quiet ):
         if kind == 0xC0:                        # 0xC0 is Program Change
             preset = message[1] + 1         # presets are 1-128
             if not quiet:
-                print('Preset Change to {:3} on channel {:2} at time {:.3}'.format( preset, mchan, delta_time ) )
+                print('Preset Change to {0:3} on channel {1:2} at time {2:.3}'.format( preset, mchan, delta_time ) )
             amp.select_preset(preset)
         elif kind == 0xB0:                      # 0xB0 is Control Change
             ccnum = message[1]
@@ -111,7 +111,7 @@ def midicallback( message, delta_time, amp, chan, quiet ):
                 name = controlMap[ccnum]
                 val = cctocontrol(ccval, name.lower())
                 if not quiet:
-                    print('{} Change to {:3} on channel {:2} at time {:.3}'.format( name, val, mchan, delta_time ))
+                    print('{0} Change to {1:3} on channel {2:2} at time {3:.3}'.format( name, val, mchan, delta_time ))
                 amp.set_control(name.lower(), val)
             
 def midiloop(midi_in, bnum):
@@ -136,26 +136,26 @@ def buscheck(sname, midi_in):
         try:
             busnum = midiports(midi_in).index(sname)
         except ValueError:
-            raise argparse.ArgumentTypeError('Midi bus "{}" not found'.format(sname))
+            raise argparse.ArgumentTypeError('Midi bus "{0}" not found'.format(sname))
 
     if busnum not in range(0, len(midi_in.ports)):
-        raise argparse.ArgumentTypeError('Midi bus {} not found'.format(busnum))
+        raise argparse.ArgumentTypeError('Midi bus {0} not found'.format(busnum))
 
     return busnum
 
 def intrangecheck(sval, ranje, sname=None):
     """argparse check that argument is an integer within a range"""
     if sname != None:
-        sname = "for {} ".format(sname)
+        sname = "for {0} ".format(sname)
     else:
         sname = ''
     try:
         ival = int(sval)
     except ValueError:
-        raise argparse.ArgumentTypeError('Invalid value {}{} should be an integer'.format(sname, sval))
+        raise argparse.ArgumentTypeError('Invalid value {0}{1} should be an integer'.format(sname, sval))
         
     if ival not in ranje:
-        msg = "Invalid value {}{} not in range {}-{}".format(sname, ival, ranje.start, ranje.stop - 1)
+        msg = "Invalid value {0}{1} not in range {2}-{3}".format(sname, ival, ranje.start, ranje.stop - 1)
         raise argparse.ArgumentTypeError(msg)
     return ival
 
@@ -173,7 +173,7 @@ class controlchecker:
             if scon in blackstarid.BlackstarIDAmp.controls.keys():
                 self.name = scon
             else:
-                raise argparse.ArgumentTypeError('Invalid control name "{}"'.format(scon))
+                raise argparse.ArgumentTypeError('Invalid control name "{0}"'.format(scon))
             return scon
         else:
             lo, hi = blackstarid.BlackstarIDAmp.control_limits[self.name]
@@ -191,7 +191,7 @@ def main():
         description =   fillit(""" Control a Blackstar ID guitar
                                    amplifier with MIDI Program Change
                                    and Control Change messages.
-                                   Version {}.""".format(__version__)),
+                                   Version {0}.""".format(__version__)),
         epilog = '\n\n'.join( [fillit(s) for s in [
             """Darkstar probably can't keep up with an LFO signal from
                your DAW. It's for setting a value every now-and-then,
@@ -220,12 +220,12 @@ def main():
 
     if any([ args.version, args.listbus, args.listmap, args.listcontrols, args.listlimits ]):
         if args.version:
-            print('Version {}'.format(__version__))
+            print('Version {0}'.format(__version__))
         if args.listbus:
-            print('\n'.join([ '{} "{}"'.format(e[0], e[1]) for e in enumerate(midiports(midi_in)) ]))
+            print('\n'.join([ '{0} "{1}"'.format(e[0], e[1]) for e in enumerate(midiports(midi_in)) ]))
         if args.listmap:
             for k in sorted(controlMap.keys()):
-                print('{:3} -> {}'.format(k, controlMap[k]))
+                print('{0:3} -> {1}'.format(k, controlMap[k]))
         if args.listcontrols:
             s = ', '.join( sorted([k for k in blackstarid.BlackstarIDAmp.controls.keys()]) )
             print(textwrap.fill(s))
@@ -233,21 +233,21 @@ def main():
             limits = blackstarid.BlackstarIDAmp.control_limits
             for k in sorted( limits.keys() ):
                 s,e = limits[k]
-                print('{}: {}-{}'.format(k,s,e))
+                print('{0}: {1}-{2}'.format(k,s,e))
     else:
         amp = blackstarid.BlackstarIDAmp()
         amp.connect()
-        print('Connected to {}'.format(amp.model))
+        print('Connected to {0}'.format(amp.model))
 
         if args.preset != None or args.volume != None or args.control != None:
             if args.preset != None:
-                print('Requesting preset {}'.format(args.preset))
+                print('Requesting preset {0}'.format(args.preset))
                 amp.select_preset(args.preset)
             if args.volume != None:
-                print('Setting volume {}'.format(args.volume))
+                print('Setting volume {0}'.format(args.volume))
                 amp.set_control('volume', args.volume)
             if args.control != None:
-                print('Setting control {} to {}'.format(args.control[0], args.control[1]))
+                print('Setting control {0} to {1}'.format(args.control[0], args.control[1]))
                 amp.set_control(args.control[0], args.control[1])
         else:
             if args.map != None:
@@ -256,10 +256,10 @@ def main():
             midi_in.callback = partial(midicallback, amp=amp, chan=args.channel, quiet=args.quiet)
             
             busstr = midiports(midi_in)[args.bus]
-            chanstr = 'MIDI channel {}'.format(args.channel)
+            chanstr = 'MIDI channel {0}'.format(args.channel)
             if args.channel == 0:
                 chanstr = 'all MIDI channels'
-            print('Listening to {} on bus "{}"'.format(chanstr, busstr))
+            print('Listening to {0} on bus "{1}"'.format(chanstr, busstr))
             
             midiloop(midi_in, args.bus)   # exit main loop with KeyboardInterrupt
 
