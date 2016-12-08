@@ -177,7 +177,9 @@ class controlchecker:
             return scon
         else:
             lo, hi = blackstarid.BlackstarIDAmp.control_limits[self.name]
-            return intrangecheck(scon, range(lo, hi + 1), self.name )
+            rv = intrangecheck(scon, range(lo, hi + 1), self.name )
+            self.name = None    # reset to initial state in case of repeated use
+            return rv
 
 controlcheck = controlchecker()
 
@@ -213,11 +215,14 @@ def main():
     parser.add_argument('--control', type=controlcheck, nargs=2, metavar=('NAME', 'VALUE'), help='set the named control to the value and exit')
     parser.add_argument('--version', action='store_true', help='print Darkstar version and exit')
     parser.add_argument('--listbus', action='store_true', help='list Midi input busses and exit')
-    parser.add_argument('--listmap', action='store_true', help='list the default control mapping and exit')
+    parser.add_argument('--listmap', action='store_true', help='list --map or default control mapping and exit')
     parser.add_argument('--listcontrols', action='store_true', help='list Blackstar controls and exit')
     parser.add_argument('--listlimits', action='store_true', help='list Blackstar controls and their limits then exit')
     args = parser.parse_args()
 
+    if args.map != None:
+        readmap(args.map)
+    
     if any([ args.version, args.listbus, args.listmap, args.listcontrols, args.listlimits ]):
         if args.version:
             print('Version {0}'.format(__version__))
@@ -250,9 +255,6 @@ def main():
                 print('Setting control {0} to {1}'.format(args.control[0], args.control[1]))
                 amp.set_control(args.control[0], args.control[1])
         else:
-            if args.map != None:
-                readmap(args.map)
-
             midi_in.callback = partial(midicallback, amp=amp, chan=args.channel, quiet=args.quiet)
             
             busstr = midiports(midi_in)[args.bus]
