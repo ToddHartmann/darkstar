@@ -245,14 +245,14 @@ def main():
         amp.connect()
         print('Connected to {0}'.format(amp.model))
 
-        if args.preset != None or args.volume != None or args.control != None:
-            if args.preset != None:
+        if any( [ args.preset, args.volume, args.control ] ):
+            if args.preset:
                 print('Requesting preset {0}'.format(args.preset))
                 amp.select_preset(args.preset)
-            if args.volume != None:
-                print('Setting volume {0}'.format(args.volume))
+            if args.volume:
+                print('Setting volume to {0}'.format(args.volume))
                 amp.set_control('volume', args.volume)
-            if args.control != None:
+            if args.control:
                 print('Setting control {0} to {1}'.format(args.control[0], args.control[1]))
                 amp.set_control(args.control[0], args.control[1])
         else:
