@@ -203,9 +203,9 @@ def main():
                your DAW. It's for setting a value every now-and-then,
                not continuously.  Latency appears to be ~40ms YLMV.""",
             """--preset, --volume, and --control are conveniences to quickly
-               set a control and exit. They can be used together.""",
+               set a control then exit. They can be used together.""",
             """--version, --listbus, --listmap, --listcontrols, and
-               --listlimits provide useful information and exit.
+               --listlimits provide useful information then exit.
                They can be used together."""]] ),
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -214,14 +214,14 @@ def main():
     parser.add_argument('--channel', type=channelcheck, default=0, help='MIDI channel 1-16 to listen on, 0=all, default=all')
     parser.add_argument('--map', type=readmap, metavar='FILENAME', help='name of file of (cc number, control name) pairs.')
     parser.add_argument('--quiet', action='store_true', help='suppress operational messages')
-    parser.add_argument('--preset', type=presetcheck, help='send a preset select 1-128 and exit')
-    parser.add_argument('--volume', type=volumecheck, help="set the amp's volume and exit")
-    parser.add_argument('--control', type=controlcheck, nargs=2, metavar=('NAME', 'VALUE'), help='set the named control to the value and exit')
-    parser.add_argument('--version', action='store_true', help='print Darkstar version and exit')
-    parser.add_argument('--listbus', action='store_true', help='list Midi input busses and exit')
-    parser.add_argument('--listmap', action='store_true', help='list --map or default control mapping and exit')
-    parser.add_argument('--listcontrols', action='store_true', help='list Blackstar controls and exit')
-    parser.add_argument('--listlimits', action='store_true', help='list Blackstar controls and their limits then exit')
+    parser.add_argument('--preset', type=presetcheck, help='send a preset select 1-128')
+    parser.add_argument('--volume', type=volumecheck, help="set the amp's volume")
+    parser.add_argument('--control', type=controlcheck, nargs=2, metavar=('NAME', 'VALUE'), help='set the named control to the value')
+    parser.add_argument('--version', action='store_true', help='print Darkstar version')
+    parser.add_argument('--listbus', action='store_true', help='list Midi input busses')
+    parser.add_argument('--listmap', action='store_true', help='list --map or default control mapping')
+    parser.add_argument('--listcontrols', action='store_true', help='list Blackstar controls')
+    parser.add_argument('--listlimits', action='store_true', help='list Blackstar controls and their limits')
     args = parser.parse_args()
 
     if any([ args.version, args.listbus, args.listmap, args.listcontrols, args.listlimits ]):
