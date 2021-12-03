@@ -104,26 +104,6 @@ def readmap(filename):
     return filename
 #
 
-def midicallback( message, delta_time, amp, chan, quiet ):
-    """respond (or not) to midi message"""
-    mchan = (message[0] & 0x0F) + 1;    # low nybble is channel-1
-    if mchan == chan or chan == 0:
-        kind  = message[0] & 0xF0;              # high nybble of Status is type
-        if kind == 0xC0:                        # 0xC0 is Program Change
-            preset = message[1] + 1         # presets are 1-128
-            if not quiet:
-                print('Preset Change to {0:3} on channel {1:2} at time {2:.3}'.format( preset, mchan, delta_time ) )
-            amp.select_preset(preset)
-        elif kind == 0xB0:                      # 0xB0 is Control Change
-            ccnum = message[1]
-            ccval = message[2]
-            if ccnum in controlMap.keys():
-                name = controlMap[ccnum]
-                val = cctocontrol(ccval, name.lower())
-                if not quiet:
-                    print('{0} Change to {1:3} on channel {2:2} at time {3:.3}'.format( name, val, mchan, delta_time ))
-                amp.set_control(name.lower(), val)
-
 MidiEvent = namedtuple('MidiEvent', ['status', 'd0', 'd1', 'd2', 'delta_time'])
 
 def midiProcess(rawEvent, amp, chan=0, quiet=False):
@@ -149,7 +129,7 @@ def midiProcess(rawEvent, amp, chan=0, quiet=False):
             if not quiet:
                 print('chan {} cc {} val {}'.format(mchan, ccnum, ccval))
 
-def midiloop(bnum, amp):
+def midiloop(bnum, amp, chan, quiet):
     """open midi, loop until ctrl-c etc. pressed, close midi."""
     midi_in = pm.Input(bnum)
 
@@ -158,7 +138,7 @@ def midiloop(bnum, amp):
         while True:
             while(midi_in.poll()):
                 event = midi_in.read(1)[0]
-                midiProcess(event, amp)
+                midiProcess(event, amp, chan, quiet)
     except KeyboardInterrupt:
         pass
 
@@ -268,7 +248,7 @@ def main():
         if args.version:
             print('Version {0}'.format(__version__))
         if args.listbus:
-            print('\n'.join([ '{0} "{1}"'.format(e[0], e[1]) for e in enumerate(midiports(midi_in)) ]))
+            print('\n'.join([ '{0} "{1}"'.format(k, v) for k,v in midiInputs().items() ]))
         if args.listmap:
             for k in sorted(controlMap.keys()):
                 print('{0:3} -> {1}'.format(k, controlMap[k]))
@@ -302,7 +282,7 @@ def main():
                 chanstr = 'all MIDI channels'
             print('Listening to {0} on bus "{1}"'.format(chanstr, busstr))
 
-            midiloop(args.bus, amp)   # exit main loop with KeyboardInterrupt
+            midiloop(args.bus, amp, args.channel, args.quiet)   # exit main loop with KeyboardInterrupt
 
         amp.disconnect()
     pm.quit()
