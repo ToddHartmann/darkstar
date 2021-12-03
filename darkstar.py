@@ -48,11 +48,17 @@ to
 These are bad solutions but they work with a minimum of changing.
 """
 
+# turn off PyGame message
+from os import environ
+environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
 import blackstarid
-import rtmidi_python as rtmidi
+import pygame.midi as pm
+#import rtmidi_python as rtmidi
 
 import argparse, csv, textwrap
 from functools import partial
+from collections import namedtuple
 
 def midiports(midi_in):
     """return a list of strings of Midi port names"""
@@ -118,32 +124,67 @@ def midicallback( message, delta_time, amp, chan, quiet ):
                     print('{0} Change to {1:3} on channel {2:2} at time {3:.3}'.format( name, val, mchan, delta_time ))
                 amp.set_control(name.lower(), val)
 
-def midiloop(midi_in, bnum):
+MidiEvent = namedtuple('MidiEvent', ['status', 'd0', 'd1', 'd2', 'delta_time'])
+
+def midiProcess(rawEvent, amp, chan=0, quiet=False):
+    event = MidiEvent._make( tuple(rawEvent[0]) + (rawEvent[1],) )
+
+    mchan = (event.status & 0x0F) + 1;    # low nybble is channel-1
+    if mchan == chan or chan == 0:
+        kind  = event.status & 0xF0;              # high nybble of Status is type
+        if kind == 0xC0:                        # 0xC0 is Program Change
+            preset = event.d0 + 1         # presets are 1-128
+            if not quiet:
+                print('Preset Change to {} on channel {} at time {}'.format( preset, mchan, event.delta_time ) )
+            amp.select_preset(preset)
+        elif kind == 0xB0:                      # 0xB0 is Control Change
+            ccnum = event.d0
+            ccval = event.d1
+            if ccnum in controlMap.keys():
+                name = controlMap[ccnum]
+                val = cctocontrol(ccval, name.lower())
+                if not quiet:
+                    print('{0} Change to {1:3} on channel {2:2} at time {3:3}'.format( name, val, mchan, event.delta_time ))
+                amp.set_control(name.lower(), val)
+            if not quiet:
+                print('chan {} cc {} val {}'.format(mchan, ccnum, ccval))
+
+def midiloop(bnum, amp):
     """open midi, loop until ctrl-c etc. pressed, close midi."""
-    midi_in.open_port(bnum)
+    midi_in = pm.Input(bnum)
 
     print('Press ctrl-C to exit')
     try:
         while True:
-            pass
+            while(midi_in.poll()):
+                event = midi_in.read(1)[0]
+                midiProcess(event, amp)
     except KeyboardInterrupt:
         pass
 
     print("Quitting")
-    midi_in.close_port()
+    midi_in.close()
 
-def buscheck(sname, midi_in):
-    """argparse checker meant to be used in a partial that supplies midi_in"""
+DevInfo = namedtuple('DevInfo', ['num', 'interf', 'name', 'input', 'output', 'opened'])
+
+def midiInputs():
+    """return a dictionary of num:name for all MIDI input devices"""
+    devices = [ DevInfo._make((i,) + pm.get_device_info(i)) for i in range(pm.get_count())  ]
+    inputs = { d.num:d.name.decode('UTF-8') for d in devices if d.input == 1 }
+    return inputs
+
+def buscheck(sname):
+    """argparse checker for bus name or number"""
     try:
         busnum = int(sname) # see if it's a number instead of a name
     except ValueError:      # okay it's a name try to find its number
         try:
-            busnum = midiports(midi_in).index(sname)
-        except ValueError:
-            raise argparse.ArgumentTypeError('Midi bus "{0}" not found'.format(sname))
+            busnum = { v:k for (k,v) in midiInputs().items() }[sname]
+        except KeyError:
+            raise argparse.ArgumentTypeError('Midi input "{0}" not found'.format(sname))
 
-    if busnum not in range(0, len(midi_in.ports)):
-        raise argparse.ArgumentTypeError('Midi bus {0} not found'.format(busnum))
+    if busnum not in midiInputs().keys():
+        raise argparse.ArgumentTypeError('Midi input {0} not found'.format(busnum))
 
     return busnum
 
@@ -190,8 +231,7 @@ controlcheck = controlchecker()
 def fillit(s): return textwrap.fill(' '.join(s.split()))
 
 def main():
-    midi_in = rtmidi.MidiIn()
-    midibus = partial(buscheck, midi_in=midi_in)
+    pm.init()
 
     parser = argparse.ArgumentParser(
         description =   fillit(""" Control a Blackstar ID guitar
@@ -210,7 +250,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
-    parser.add_argument('--bus', type=midibus, default='blackstar', help='number or exact name including spaces of MIDI bus to listen on, default="blackstar"')
+    parser.add_argument('--bus', type=buscheck, default='blackstar', help='number or exact name including spaces of MIDI bus to listen on, default="blackstar"')
     parser.add_argument('--channel', type=channelcheck, default=0, help='MIDI channel 1-16 to listen on, 0=all, default=all')
     parser.add_argument('--map', type=readmap, metavar='FILENAME', help='name of file of (cc number, control name) pairs.')
     parser.add_argument('--quiet', action='store_true', help='suppress operational messages')
@@ -256,17 +296,16 @@ def main():
                 print('Setting control {0} to {1}'.format(args.control[0], args.control[1]))
                 amp.set_control(args.control[0], args.control[1])
         else:
-            midi_in.callback = partial(midicallback, amp=amp, chan=args.channel, quiet=args.quiet)
-
-            busstr = midiports(midi_in)[args.bus]
+            busstr = midiInputs()[args.bus] #midiports(midi_in)[args.bus]
             chanstr = 'MIDI channel {0}'.format(args.channel)
             if args.channel == 0:
                 chanstr = 'all MIDI channels'
             print('Listening to {0} on bus "{1}"'.format(chanstr, busstr))
 
-            midiloop(midi_in, args.bus)   # exit main loop with KeyboardInterrupt
+            midiloop(args.bus, amp)   # exit main loop with KeyboardInterrupt
 
         amp.disconnect()
+    pm.quit()
 #
 if __name__ == '__main__':
     main()
