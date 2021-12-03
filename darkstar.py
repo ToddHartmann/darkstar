@@ -12,17 +12,20 @@ Author: Todd Hartmann
 License:  Public Domain, Use At Your Own Risk
 
 Darkstar is a command line app and only requires the excellent
-Outsider and awesome rtMidi-Python
+Outsider and awesome PyGame
 
 https://github.com/jonathanunderwood/outsider
-https://github.com/superquadratic/rtmidi-python
+https://www.pygame.org/wiki/GettingStarted
 
 Outsider needs PyQt5 for its UI and PyUSB to talk to the amp
 
 https://wiki.python.org/moin/PyQt
-https://pypi.python.org/pypi/pyusb/1.0.0
+https://pyusb.github.io/pyusb/
 
-Outsider can run on Windows if you make some changes.
+To get PyUSB to run on Windows make sure to download the latest .7z archive
+and put the MINGW64 libusb-1.0.dll in the same directory as your python.exe.
+
+Outsider will run on Windows if you make three little changes.
 
 First, for some reason, Windows reports one extra byte transmitted.  So
 change in blackstarid.py, class BlackstarIDAmp, member _send_data() ~line 463,
@@ -54,10 +57,8 @@ environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
 import blackstarid
 import pygame.midi as pm
-#import rtmidi_python as rtmidi
 
 import argparse, csv, textwrap
-from functools import partial
 from collections import namedtuple
 
 def midiports(midi_in):
