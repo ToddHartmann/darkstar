@@ -42,7 +42,7 @@ loop in blackstarid.py, class BlackstarIDAmp member connect(),
 to
         for intf in []: #cfg:  HEY WINDOWS DON'T DO THIS KERNEL VOODOO
 
-and do the same sorta thing in disconnect(), ~line 429, change
+and do the same sorta thing in dinameThenValnect(), ~line 429, change
 
         cfg = self.device.get_active_configuration()
 to
@@ -61,11 +61,6 @@ import pygame.midi as pm
 import argparse, csv, textwrap
 from collections import namedtuple
 
-def midiports(midi_in):
-    """return a list of strings of Midi port names"""
-    # because midi_in.ports elements end with annoying space and bus number
-    return [ v[0 : v.rfind(b' ')].decode('UTF-8') for v in midi_in.ports ]
-#
 def cctocontrol(ccval, name):
     """scale CC value to named control's range"""
     fcc = float(ccval) / 127.0
@@ -194,16 +189,17 @@ class controlchecker:
     def __init__(self):
         self.name = None
 
-    def __call__(self, scon):
+    def __call__(self, nameThenVal):
         if(self.name == None):  # first execution is control name
-            if scon in blackstarid.BlackstarIDAmp.controls.keys():
-                self.name = scon
+            lname = nameThenVal.lower()
+            if lname in blackstarid.BlackstarIDAmp.controls.keys():
+                self.name = lname
             else:
-                raise argparse.ArgumentTypeError('Invalid control name "{0}"'.format(scon))
-            return scon
+                raise argparse.ArgumentTypeError('Invalid control name "{0}"'.format(nameThenVal))
+            return lname
         else:
             lo, hi = blackstarid.BlackstarIDAmp.control_limits[self.name]
-            rv = intrangecheck(scon, range(lo, hi + 1), self.name )
+            rv = intrangecheck(nameThenVal, range(lo, hi + 1), self.name )
             self.name = None    # reset to initial state in case of repeated use
             return rv
 
@@ -277,7 +273,7 @@ def main():
                 print('Setting control {0} to {1}'.format(args.control[0], args.control[1]))
                 amp.set_control(args.control[0], args.control[1])
         else:
-            busstr = midiInputs()[args.bus] #midiports(midi_in)[args.bus]
+            busstr = midiInputs()[args.bus]
             chanstr = 'MIDI channel {0}'.format(args.channel)
             if args.channel == 0:
                 chanstr = 'all MIDI channels'
