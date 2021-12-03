@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 """
 Darkstar
 
@@ -71,7 +71,7 @@ def cctocontrol(ccval, name):
 # it's okay to map more than one CC to a given control
 
 controlMap = dict( [
-    (7, 'Volume'),     
+    (7, 'Volume'),
     (22, 'Volume'), (23, 'Bass'), (24, 'Middle'), (25, 'Treble'),
     (26, 'Mod_Switch'), (27, 'Delay_Switch'), (28, 'Reverb_Switch'),
     (14, 'Voice'), (15, 'Gain'), (16, 'ISF')
@@ -94,7 +94,7 @@ def readmap(filename):
         raise argparse.ArgumentTypeError(e)
     except ValueError as e:
         raise argparse.ArgumentTypeError('{0} in {1}'.format(e, filename))
-    
+
     return filename
 #
 
@@ -117,7 +117,7 @@ def midicallback( message, delta_time, amp, chan, quiet ):
                 if not quiet:
                     print('{0} Change to {1:3} on channel {2:2} at time {3:.3}'.format( name, val, mchan, delta_time ))
                 amp.set_control(name.lower(), val)
-            
+
 def midiloop(midi_in, bnum):
     """open midi, loop until ctrl-c etc. pressed, close midi."""
     midi_in.open_port(bnum)
@@ -128,7 +128,7 @@ def midiloop(midi_in, bnum):
             pass
     except KeyboardInterrupt:
         pass
-    
+
     print("Quitting")
     midi_in.close_port()
 
@@ -157,7 +157,7 @@ def intrangecheck(sval, ranje, sname=None):
         ival = int(sval)
     except ValueError:
         raise argparse.ArgumentTypeError('Invalid value {0}{1} should be an integer'.format(sname, sval))
-        
+
     if ival not in ranje:
         msg = "Invalid value {0}{1} not in range {2}-{3}".format(sname, ival, ranje.start, ranje.stop - 1)
         raise argparse.ArgumentTypeError(msg)
@@ -209,7 +209,7 @@ def main():
                They can be used together."""]] ),
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    
+
     parser.add_argument('--bus', type=midibus, default='blackstar', help='number or exact name including spaces of MIDI bus to listen on, default="blackstar"')
     parser.add_argument('--channel', type=channelcheck, default=0, help='MIDI channel 1-16 to listen on, 0=all, default=all')
     parser.add_argument('--map', type=readmap, metavar='FILENAME', help='name of file of (cc number, control name) pairs.')
@@ -257,13 +257,13 @@ def main():
                 amp.set_control(args.control[0], args.control[1])
         else:
             midi_in.callback = partial(midicallback, amp=amp, chan=args.channel, quiet=args.quiet)
-            
+
             busstr = midiports(midi_in)[args.bus]
             chanstr = 'MIDI channel {0}'.format(args.channel)
             if args.channel == 0:
                 chanstr = 'all MIDI channels'
             print('Listening to {0} on bus "{1}"'.format(chanstr, busstr))
-            
+
             midiloop(midi_in, args.bus)   # exit main loop with KeyboardInterrupt
 
         amp.disconnect()
