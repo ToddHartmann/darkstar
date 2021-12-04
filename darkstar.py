@@ -25,6 +25,8 @@ https://pyusb.github.io/pyusb/
 To get PyUSB to run on Windows make sure to download the latest .7z archive
 and put the MINGW64 libusb-1.0.dll in the same directory as your python.exe.
 
+https://github.com/libusb/libusb/releases
+
 Outsider will run on Windows if you make three little changes.
 
 First, for some reason, Windows reports one extra byte transmitted.  So
@@ -42,7 +44,7 @@ loop in blackstarid.py, class BlackstarIDAmp member connect(),
 to
         for intf in []: #cfg:  HEY WINDOWS DON'T DO THIS KERNEL VOODOO
 
-and do the same sorta thing in dinameThenValnect(), ~line 429, change
+and do the same sorta thing in disconnect(), ~line 429, change
 
         cfg = self.device.get_active_configuration()
 to
